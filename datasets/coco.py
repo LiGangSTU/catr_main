@@ -88,4 +88,28 @@ class CocoCaption(Dataset):
 
         caption_encoded = self.tokenizer.encode_plus(
             caption, max_length=self.max_length, pad_to_max_length=True, return_attention_mask=True, return_token_type_ids=False, truncation=True)
-        )
+        caption = np.array(caption_encoded['input_ids'])
+        cap_mask = (1 - np.array(caption_encoded['attention_mask'])).astype(bool)
+        return image.tensors.squeeze(0), image.mask.squeeze(0), caption, cap_mask
+
+
+def build_dataset(config, mode='training'):
+    if mode == 'training':
+        train_dir = os.path.join(config.dir, 'train2017')
+        train_file = os.path.join(
+            config.dir, 'annotations', 'captions_train2017.json')
+        data = CocoCaption(train_dir, read_json(
+            train_file), max_length=config.max_position_embeddings, limit=config.limit, transform=train_transform, mode='training')
+        return data
+
+    elif mode == 'validation':
+        val_dir = os.path.join(config.dir, 'val2017')
+        val_file = os.path.join(
+            config.dir, 'annotations', 'captions_val2017.json')
+        data = CocoCaption(val_dir, read_json(
+            val_file), max_length=config.max_position_embeddings, limit=config.limit, transform=val_transform, mode='validation')
+        return data
+
+    else:
+        raise NotImplementedError(f"{mode} not supported")
+
